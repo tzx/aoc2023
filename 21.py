@@ -1,28 +1,44 @@
-import re
-import math
+import numpy as np
 from collections import deque
 
-grid = [list(l.strip()) for l in open('input.txt')]
-STEPS = 64
-m, n = len(grid), len(grid[0])
-Q = deque([])
+G = { (r, c): cell for r, row in enumerate(open('input.txt')) for c, cell in enumerate(row.strip()) }
+N = max([r for r, _ in G.keys()]) + 1
 
-for r, row in enumerate(grid):
-    for c, cell in enumerate(row):
-        if cell == 'S':
-            grid[r][c] = '.'
+def possible(steps):
+    grid = G.copy()
+
+    Q = deque([])
+    for (r, c), v in grid.items():
+        if v == 'S':
             Q.append( (r, c) )
 
-for level in range(1, STEPS + 1):
-    to_add = set()
-    while Q:
-        r, c, *_ = Q.popleft()
-        for dr, dc in [ (0,1), (0,-1), (1,0), (-1,0) ]:
-            nr, nc = (r + dr) % m, (c + dc) % n
-            if nr not in range(m) and nc not in range(n): continue
-            if grid[nr][nc] not in '.': continue
-            to_add.add( (nr, nc) )
+    for level in range(1, steps + 1):
+        to_add = set()
+        while Q:
+            r, c = Q.popleft()
+            for dr, dc in [ (0,1), (0,-1), (1,0), (-1,0) ]:
+                nr, nc = (r + dr), (c + dc)
+                mr, mc = nr % N, nc % N
+                grid[nr, nc] = grid[mr, mc]
+                # if nr not in range(N) and nc not in range(N): continue
+                if grid[mr,mc] not in '.S': continue
+                to_add.add( (nr, nc) )
 
-    Q.extend(list(to_add))
-print(len(Q))
+        Q.extend(list(to_add))
+    return len(Q)
 
+print(possible(64))
+
+# Because input has S in center(square) and it is like +, we reach same "state" after len(grid)
+C = N // 2
+P = [(0, possible(C)), 
+    (1, possible(C + N)), 
+    (2, possible(C + 2 * N))]
+
+def n2(points, x):
+    coefficients = np.polyfit(*zip(*points), 2)
+    result = np.polyval(coefficients, x)
+    return result
+
+v = 26501365 // N
+print(n2(P, v))
